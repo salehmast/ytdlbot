@@ -143,9 +143,9 @@ def download_handler(client: "Client", message: "types.Message"):
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
 
-    if not re.findall(r"^https?://", url.lower()):
+    if not re.findall(r"^https?://", url.lower()) or re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
         Redis().update_metrics("bad_request")
-        message.reply_text("I think you should send me a link.", quote=True)
+        message.reply_text("I think you should send me a link or magnet link.", quote=True)
         return
 
     Redis().update_metrics("video_request")
@@ -153,7 +153,10 @@ def download_handler(client: "Client", message: "types.Message"):
     client.send_chat_action(chat_id, 'upload_video')
     temp_dir = tempfile.TemporaryDirectory()
 
-    result = ytdl_download(url, temp_dir.name, bot_msg)
+    if re.findall(r"^https?://", url.lower()):
+        result = ytdl_download(url, temp_dir.name, bot_msg)
+    elif re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
+        result = ytdl_download(url, temp_dir.name, bot_msg)
     logging.info("Download complete.")
 
     markup = InlineKeyboardMarkup(
@@ -231,4 +234,4 @@ if __name__ == '__main__':
 By @BennyThink, VIP mode: {ENABLE_VIP}
     """
     print(banner)
-    app.run()
+    # app.run()

@@ -16,3 +16,10 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY . /ytdlbot
 
 CMD ["/usr/local/bin/supervisord", "-c" ,"/ytdlbot/supervisor.conf"]
+
+
+FROM node:lts
+RUN \
+  npm install webtorrent-cli
+
+ENTRYPOINT [ "node", "/node_modules/webtorrent-cli/bin/cmd.js" ]

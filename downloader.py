@@ -9,6 +9,7 @@ __author__ = "Benny <benny.think@gmail.com>"
 
 import logging
 import os
+import re
 import pathlib
 import subprocess
 import time
@@ -75,7 +76,7 @@ def upload_hook(current, total, bot_msg):
     edit_text(bot_msg, text)
 
 
-def check_quota(file_size, chat_id) -> ("bool", "str"):
+def check_quota(file_size, chat_id):
     remain, _, ttl = VIP().check_remaining_quota(chat_id)
     if file_size > remain:
         refresh_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ttl + time.time()))
@@ -88,6 +89,16 @@ def check_quota(file_size, chat_id) -> ("bool", "str"):
     else:
         return True, ""
 
+def magnet_link_downloader(magt:str,tempdir:str):
+    output = os.path.join(tempdir, '%(title).50s.%(ext)s')
+    cmd = [ "webtorrent", "download" ,"-o",output, magt ,"--vlc"]
+    comand=subprocess.run(cmd,shell=True,universal_newlines=True,capture_output=True)
+    reg=re.findall(r"Downloading: (.*)",comand.stdout)
+    reg2=re.findall(r"Downloading to: (.*)",comand.stdout)
+    try:
+        return os.path.join(reg2[0],reg[0])
+    except:
+        print('invalid')
 
 def convert_to_mp4(resp: dict):
     default_type = ["video/x-flv"]
@@ -107,7 +118,7 @@ def convert_to_mp4(resp: dict):
         return resp
 
 
-def ytdl_download(url, tempdir, bm) -> dict:
+def ytdl_download(url, tempdir, bm,magnet_or_not) -> dict:
     chat_id = bm.chat.id
     response = {"status": True, "error": "", "filepath": []}
     output = os.path.join(tempdir, '%(title).50s.%(ext)s')
@@ -128,11 +139,14 @@ def ytdl_download(url, tempdir, bm) -> dict:
             ydl_opts["format"] = f
         try:
             logging.info("Downloading for %s with format %s", url, f)
-            with ytdl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            response["status"] = True
-            response["error"] = ""
-            break
+            if magnet_or_not:
+                magnet_link_downloader(url,tempdir)
+            else:
+                with ytdl.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+                response["status"] = True
+                response["error"] = ""
+                break
 
         except DownloadError as e:
             err = str(e)
@@ -150,22 +164,39 @@ def ytdl_download(url, tempdir, bm) -> dict:
     if response["status"] is False:
         return response
 
-    for i in os.listdir(tempdir):
-        p: "str" = os.path.join(tempdir, i)
-        file_size = os.stat(p).st_size
-        if ENABLE_VIP:
-            remain, _, ttl = VIP().check_remaining_quota(chat_id)
-            result, err_msg = check_quota(file_size, chat_id)
-        else:
-            result, err_msg = True, ""
-        if result is False:
-            response["status"] = False
-            response["error"] = err_msg
-        else:
-            VIP().use_quota(bm.chat.id, file_size)
-            response["status"] = True
-            response["filepath"].append(p)
-
+    if magnet_or_not:
+        for root, dirs, files in os.walk(tempdir):
+            for i in files:
+                p: "str" = os.path.join(tempdir, i)
+                file_size = os.stat(p).st_size
+                if ENABLE_VIP:
+                    remain, _, ttl = VIP().check_remaining_quota(chat_id)
+                    result, err_msg = check_quota(file_size, chat_id)
+                else:
+                    result, err_msg = True, ""
+                if result is False:
+                    response["status"] = False
+                    response["error"] = err_msg
+                else:
+                    VIP().use_quota(bm.chat.id, file_size)
+                    response["status"] = True
+                    response["filepath"].append(p)
+    else:
+        for i in os.listdir(tempdir):
+            p: "str" = os.path.join(tempdir, i)
+            file_size = os.stat(p).st_size
+            if ENABLE_VIP:
+                remain, _, ttl = VIP().check_remaining_quota(chat_id)
+                result, err_msg = check_quota(file_size, chat_id)
+            else:
+                result, err_msg = True, ""
+            if result is False:
+                response["status"] = False
+                response["error"] = err_msg
+            else:
+                VIP().use_quota(bm.chat.id, file_size)
+                response["status"] = True
+                response["filepath"].append(p)
     # convert format if necessary
     convert_to_mp4(response)
     return response
