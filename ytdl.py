@@ -143,7 +143,7 @@ def download_handler(client: "Client", message: "types.Message"):
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
 
-    if not re.findall(r"^https?://", url.lower()) or not re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
+    if not re.findall(r"^https?://", url.lower()) and not re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
         Redis().update_metrics("bad_request")
         message.reply_text("I think you should send me a link or magnet link.", quote=True)
         return
