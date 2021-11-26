@@ -143,11 +143,14 @@ def download_handler(client: "Client", message: "types.Message"):
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
 
-    if not re.findall(r"^https?://", url.lower()) or re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
+    if not re.findall(r"^https?://", url.lower()):
         Redis().update_metrics("bad_request")
         message.reply_text("I think you should send me a link or magnet link.", quote=True)
         return
-
+    elif not re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
+        Redis().update_metrics("bad_request")
+        message.reply_text("I think you should send me a link or magnet link.", quote=True)
+        return
     Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
