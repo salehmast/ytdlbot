@@ -234,4 +234,4 @@ if __name__ == '__main__':
 By @BennyThink, VIP mode: {ENABLE_VIP}
     """
     print(banner)
-    # app.run()
+    app.run()
