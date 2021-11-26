@@ -154,9 +154,9 @@ def download_handler(client: "Client", message: "types.Message"):
     temp_dir = tempfile.TemporaryDirectory()
 
     if re.findall(r"^https?://", url.lower()):
-        result = ytdl_download(url, temp_dir.name, bot_msg)
+        result = ytdl_download(url, temp_dir.name, bot_msg,False)
     elif re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
-        result = ytdl_download(url, temp_dir.name, bot_msg)
+        result = ytdl_download(url, temp_dir.name, bot_msg,True)
     logging.info("Download complete.")
 
     markup = InlineKeyboardMarkup(
