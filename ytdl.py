@@ -190,7 +190,7 @@ def download_handler(client: "Client", message: "types.Message"):
         tb = result["error"][0:4000]
         bot_msg.edit_text(f"Download failed!❌\n\n```{tb}```", disable_web_page_preview=True)
 
-    temp_dir.cleanup()
+#     temp_dir.cleanup()
 
 
 @app.on_callback_query()
