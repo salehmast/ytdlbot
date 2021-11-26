@@ -174,6 +174,7 @@ def download_handler(client: "Client", message: "types.Message"):
         video_paths = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
         for video_path in video_paths:
+            print(video_path)
             filename = pathlib.Path(video_path).name
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
