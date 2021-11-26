@@ -167,7 +167,7 @@ def ytdl_download(url, tempdir, bm,magnet_or_not) -> dict:
     if magnet_or_not:
         for root, dirs, files in os.walk(tempdir):
             for i in files:
-                p: "str" = os.path.join(tempdir, i)
+                p: "str" = os.path.join(root,i)
                 file_size = os.stat(p).st_size
                 if ENABLE_VIP:
                     remain, _, ttl = VIP().check_remaining_quota(chat_id)
