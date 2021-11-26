@@ -143,17 +143,19 @@ def download_handler(client: "Client", message: "types.Message"):
     url = re.sub(r'/ytdl\s*', '', message.text)
     logging.info("start %s", url)
 
-    if not re.findall(r"^https?://", url.lower()):
+    if not re.findall(r"^https?://", url.lower()) and not re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
         Redis().update_metrics("bad_request")
-        message.reply_text("I think you should send me a link.", quote=True)
+        message.reply_text("I think you should send me a link or magnet link.", quote=True)
         return
-
     Redis().update_metrics("video_request")
     bot_msg: typing.Union["types.Message", "typing.Any"] = message.reply_text("Processing", quote=True)
     client.send_chat_action(chat_id, 'upload_video')
     temp_dir = tempfile.TemporaryDirectory()
 
-    result = ytdl_download(url, temp_dir.name, bot_msg)
+    if re.findall(r"^https?://", url.lower()):
+        result = ytdl_download(url, temp_dir.name, bot_msg,False)
+    elif re.findall(r"magnet:\?xt=urn:btih:", url.lower()):
+        result = ytdl_download(url, temp_dir.name, bot_msg,True)
     logging.info("Download complete.")
 
     markup = InlineKeyboardMarkup(
@@ -172,6 +174,7 @@ def download_handler(client: "Client", message: "types.Message"):
         video_paths = result["filepath"]
         bot_msg.edit_text('Download complete. Sending now...')
         for video_path in video_paths:
+            print(video_path)
             filename = pathlib.Path(video_path).name
             remain = bot_text.remaining_quota_caption(chat_id)
             size = sizeof_fmt(os.stat(video_path).st_size)
